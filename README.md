@@ -51,3 +51,14 @@ master 나 main
 2. 입력을 위해서는 -> 입력모드로 진입해야 가능 : insert 키로 insert, replace 설정 가능 esc 누르면 빠져나옴
 3. :wq << 저장하고 빠져나오기 (write and Quit)
 ```
+
+### commit
+#### 정의
+  - The "commit" command is used to save your changes to the local repository.
+  - 커밋 하나는 독립적인 버전을 나타냄
+  - The git commit command captures a snapshot of the project's currently staged changes.
+  - 스냅샷(사진)과 유사
+
+#### 언제 커밋을 만드는가
+  - logical한 변경이 있을때 커밋을 하나 만듬
+  - 가능하면 커밋 단위는 작을 수록 좋음
