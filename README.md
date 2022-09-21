@@ -21,15 +21,12 @@ ls
 ```
 cd 디렉토리 이동
 ```
-
-
-windows 에서 git을 사용할 때, default editor를 vim으로 셋팅
-vim ediotr를 처음 켤 때는 명령모드로 진입
--> 입력모드로 진입해야 가능 : insert 키로 insert, replace 설정 가능 esc 누르면 빠져나옴
-:wq << 저장하고 빠져나오기 (write and Quit)
-
+```
 clear << 창 정리하기
+```
+```
 history << 쳤던 명령어 되새김
+```
 
 ## 커밋
 
@@ -44,3 +41,13 @@ gitignore을 반드시 추가해야한다.
 혼자 할 때는 안 만들고 해도 돼용
 회사에서는 무조건 브랜치 만들고 시작 ~!
 master 나 main 
+
+## VIM 사용법
+```
+> windows 에서 git을 사용할 때, default editor를 vim으로 셋팅
+
+### 명령모드 vs. 입력모드
+1. vim ediotr를 처음 켤 때는 명령모드로 진입: 이 때는 입력이 불가
+2. 입력을 위해서는 -> 입력모드로 진입해야 가능 : insert 키로 insert, replace 설정 가능 esc 누르면 빠져나옴
+3. :wq << 저장하고 빠져나오기 (write and Quit)
+```
