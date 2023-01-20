@@ -7,7 +7,7 @@
     1.3 정량 데이터와 정성 데이터
     1.4 퍼스트, 세컨드, 서드 파티 데이터
     1.5 희소 데이터
-
+    
 2. SQL 쿼리 구조
 3. 프로파일링: 데이터 분포
 4. 프로파일링: 데이터 품질
@@ -112,3 +112,100 @@ LIMIT 100 -- 100개 행으로 출력 레코드 수 제한
 ```
 
 
+## <b>2.3 프로파일링: 데이터 분포</b>
+스키마와 테이블을 통해 데이터가 어떻게 저장되어있는 지 파악
+
+### <b> 2.3.1 히스토그램과 빈도 </b>
+- 프로파일링 하기 위한 필드를 GROUP BY 절로 지정하고, count(*)를 통해 필드 내에서 각 값의 개수를 알아냄
+
+```
+SELECT fruit, count(*) as qty
+FROM fruit_inventory
+GROUP BY 1 -- 과일별로 grouping
+;
+```
+💡 count함수를 사용할 때에는 데이터셋에 중복되는 레코드가 있는지 잘 알아봐야 한다. 전체 레코드, 수를 알고싶다면 count(*)를 사용해도 좋지만, 중복되지 않는 고유한 필드의 수를 세고 싶다면 count distinct를 사용해야 함
+
+- 빈도 그림: 데이터셋에 존재하는 값의 빈도를 시각화하는 방법
+
+- 주문 개수 별 고객 분포
+    - 서브쿼리에서 count를 사용한 customer_id 에 대한 주문 수 파악
+    - 이 서브쿼리에서 나온 주문 수 orders를 카테고리로 삼고 count를 사용해 주문 개술 별 고객의 수를 집계
+```
+SELECT orders, count(*) as num_customers
+FROM(
+    SELECT customer_id, count(order_id) as orders
+    FROM orders
+    GROUP BY 1
+) a
+GROUP BY 1
+;
+```
+
+### <b>2.3.2 구간화</b>
+- 연속값을 프로파일링 할 때 유용
+- 값의 범위를 기준으로 먼저 그룹핑
+- CASE문, 반올림, 로그 등을 사용하여 간단히 수행 <br>
+
+<b> CASE문 syntax </b>
+
+```
+CASE WHEN condition1 THEN return_value_1
+    WHEN condition2 THEN return_value_2
+    ...
+    ELSE return_value_default
+    END
+```
+💡 하나의 CASE 문에서 THEN의 모든 반환값은 데이터 타입이 같아야 하며, 그렇지 않으면 오류가 발생. 만약 이 문제로 오류가 발생하면 반환값의 데이터 타입을 문자열 등의 일반 데이터 타입으로 캐스팅하여 해결 <br>
+
+** 데이터에서 매우 작거나 매우 큰 값으로 인해 그래프의 꼬리 한쪽이 길게 늘어진 모양이 나올 때, 모든 값의 개수를 확인하기보다 구간화를 활용하는 편이 좋음.
+
+<br>
+ e.g. 기업의 주문량에 따라 운송비 할인율을 다르게 적용하는 상황을 가정하여 주문량을 기준으로 기업을 나누고 주문량 구간별 기업 수를 파악
+
+ ```
+ SELECT 
+    CASE WHEN order_amount <= 100 THEN 'up to 100'
+        WHEN order_amount <= 500, THEN '100 - 500'
+        ELSE 500 + END as amount_bin
+    , CASE WHEN order_amount <= 100 THEN 'small'
+        WHEN order_amount <= 500 THEN 'medium'
+        ELSE 'large' END as amount_category
+    , COUNT(customer_id) as customers
+    FROM orders
+    GROUP BY 1,2```
+
+ ```
+
+- 구간 범위 설정에 로그를 사용하기도 합니다. => 데이터셋에서 가장 작은 값과 큰 값들의 차이가 매우 큰 경우에 유용 (e.g. 가계 자산 분포, 인터넷 속성에 따른 웹사이트 방문자 분포 등)
+
+| 형식 | 결과 |
+| -- | -- |
+|log(1) | 0 |
+| log(10) | 1 |
+| log(100) | 2 |
+| log(1000) | 3 |
+
+LOG 함수는 인자의 로그 값을 반환하며, 인자에는 상숫값이나 필드를 지정
+```
+SELECT log(sales) as bin,
+    count(customer_id) as customers
+FROM table
+GROUP BY 1
+;
+```
+
+- log함수의 인자로 10의 배수가 아닌 다른 숫자를 사용할 수도 있지만, 0 이하의 값을 사용하면 데이터베이스에 따라 null을 반환하거나 오류가 날 수 있으므로 주의
+
+
+### <b> 2.3.3 N분위수</b>
+
+### 1. 윈도우 함수
+윈도우 함수: 여러 행에 걸친 계산을 수행<br>
+함수 이름 + OVER 절로 구성 <br>
+OVER 절은 연산을 수행하고 정렬할 필드를 선택
+```
+function(필드명) OVER(PARTITON BY 필드명 ORDER BY 필드명)
+```
+- 함수로는 일반 집계 함수 뿐만 아니라 rank, first_value, ntile 등도 상용 가능
+- PARTITION BY 절은 필요하지 않다면 생략 가능: 명시하지 않을 경우 
