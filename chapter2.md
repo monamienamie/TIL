@@ -173,7 +173,7 @@ CASE WHEN condition1 THEN return_value_1
         ELSE 'large' END as amount_category
     , COUNT(customer_id) as customers
     FROM orders
-    GROUP BY 1,2```
+    GROUP BY 1,2
 
  ```
 
@@ -208,4 +208,124 @@ OVER 절은 연산을 수행하고 정렬할 필드를 선택
 function(필드명) OVER(PARTITON BY 필드명 ORDER BY 필드명)
 ```
 - 함수로는 일반 집계 함수 뿐만 아니라 rank, first_value, ntile 등도 상용 가능
-- PARTITION BY 절은 필요하지 않다면 생략 가능: 명시하지 않을 경우 
+- PARTITION BY 절은 필요하지 않다면 생략 가능: 명시하지 않을 경우 전체 테이블에 대해 연산 수행
+- ORDER BY 절에 명시된 필드를 기준으로 정렬
+
+```
+ntile(num_bins) OVER (PARTITION BY ... ORDER BY...)
+```
+나누고 싶은 구간의 개수를 인자로 받아 데이터를 나눔
+
+```
+SELECT ntile
+, min(order_amount) as lower_bound
+, max(order_amount) as upper_bound
+, count(order_id) as orders
+FROM
+    (SELECT customer_id, order_id, order_amount
+    , ntile(10) OVER (ORDER BY order_amount) as ntile
+    FROM orders
+    ) a
+GROUP BY 1
+;
+```
+- 각 행의 N분위 수 값을 계산하고 min, max 함수를 통해 구간별 범위를 확인할 수 있다.
+
+- 유사한 기능을 할 수 있는 함수: percent_rank
+- 다만, ntile과 percent_rank 모두 계산을 위해 행 정렬이 들어가느라 연산이 많으므로, 대용량 데이터 처리에서는 적합하지 않음
+
+
+<br> <br>
+
+## <b>2.4  프로파일링: 데이터 품질 </b>
+가능하다면 데이터를 실제 검증 자료와 비교해 보는 것이 가장 좋음
+<br>
+프로파일링을 통해 null, 검토해야 할 카테고리 분류, 처리가 필요한 값이 여러 개인 개인 필드, 일반적이지 않은 날짜/시간 형식을 탐색
+
+### <b> 2.4.1 중복 탐지 </b>
+
+중복이 발생하는 대표적인 이유
+- 휴먼 에러
+- 데이터 삽입 코드를 두 번 실행
+- 데이터 처리 단계에서 코드를 여러 번 실행(다대다 JOIN 등)
+
+<br> 중복을 찾아내는 여러 가지 방법
+1. cartition Join 으로 가능한 경우의 수를 모두 본다 -> 모든 행을 봐야하므로 일이 좀 커짐
+2. SELECT와 count 함수를 사용한 개수 체크 <br>
+기본적인 컨셉은 확인하고자 하는 컬럼을 그룹핑하여 그 개수를 카운트, 1개 초과인 중복 데이터를 탐색 <br>
+
+* Query 1 (subquery)
+```
+SELECT records, count(*)
+FROM (
+    SELECT col_a, col_b, col_c, .. , count(*) as records
+    FROM table
+    GROUP BY 1,2,3 ...
+) a
+WHERE records > 1
+GROUP BY 1
+```
+- Query 2 (grouping + having)
+
+```
+SELECT col_a, col_b, col_c, ... , count(*) as records
+FROM table
+GROUP BY 1,2,3, ... 
+HAVING records > 1
+```
+
+### <b> 2.4.2 중복 제거 </b>
+- 거래 이력이 있는 고객 모두에게 다음 주문 시 사용 가능한 쿠폰을 보낸다고 가정해보자. 우선, customer 테이블과 transaction 테이블에 JOIN을 수행해 거래 내역이 있는 고객 리스트를 추출
+```
+SELECT c.customer_id, c.customer_name, c.customer_email
+FROM customer as c
+JOIN transaction as t ON c.customer_id = t.customer_id
+;
+```
+<b> 여러 번의 거래 기록이 있는 경우 중복 데이터가 나타나게 됨, 세 가지 방법을 이용해 중복 제거 가능</b>
+- DISTINCT 사용
+- GROUP BY 를 사용한 unique 값 조회
+- 집계함수 (min, max)를 사용
+
+<br> <br>
+## <b> 2.5 준비: 데이터 정제</b>
+<br>
+CASE 변환, null처리, 데이터 타입 변환 등
+<br> <br>
+
+1) CASE 문 <br>
+데이터의 표준화, 구간화 등에 사용 <br>
+e.g. NPS (순수 추천 고객 지수) 구하기
+```
+SELECT reposnse_id , likelihood
+, CASE WHEN likelihood <= 6 THEN 'Detractor'
+    WHEN likelihood <= 8 THEN 'Passive'
+    ELSE 'Promoter'
+    END as reponse_type
+FROM nps_reponses
+```
+또는 <b>IN</b> 연산자를 이용해 카테고리 값을 직접 지정해 줄 수 있다.
+```
+CASE WHEN likelihood in (0,1,2,3,4,5,6) THEN 'Detractor'
+    WHEN likelihood in (7,8) THEN 'Passive'
+    WHEN likelihood in (9,10) THEN 'Promoter'
+    END as reponse_type
+```
+
+<br>
+동시에 여러 절에 조건을 걸 때에는 AND 또는 OR 연산자로 연결해 줄 수 있다.
+
+```
+CASE WHEN likelihood <= 6
+        AND country = 'US'
+        AND high_value = true
+        THEN 'US high value detractor'
+    WHEN likelihood >= 9
+        AND (country in ('CA', 'JP) 
+            or high_value = true)
+        THEN 'some other label'
+    ...
+    END
+```
+
+<b> 룩업 테이블을 활용한 데이터 정제 </b>
