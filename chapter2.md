@@ -293,7 +293,7 @@ JOIN transaction as t ON c.customer_id = t.customer_id
 CASE 변환, null처리, 데이터 타입 변환 등
 <br> <br>
 
-1) CASE 문 <br>
+### **2.5.1 CASE 문** <br>
 데이터의 표준화, 구간화 등에 사용 <br>
 e.g. NPS (순수 추천 고객 지수) 구하기
 ```
@@ -328,4 +328,58 @@ CASE WHEN likelihood <= 6
     END
 ```
 
-<b> 룩업 테이블을 활용한 데이터 정제 </b>
+**룩업 테이블을 활용한 데이터 정제**
+> 해당 필드에 어떤 데이터가 있는지 알 때, 데이터의 분산이 크지 않으며 값이 변경될 일이 없다고 확신한다면 데이터 정제나 보강에 CASE 문을 사용할 수 있지만, 필드에 저장된 데이터의 분산이 크고 값이 자주 바뀔 수 있는 경우에는 룩업 테이블을 사용하는 편이 낫다.
+- 룩업 테이블: 키-값 쌍으로 정의<br>
+별도의 코드를 주기적으로 실행해 키-값 쌍에 새로운 값을 추가할 수 있으며, 쿼리를 수행할 때 룩업 테이블에 별도의 JOIN을 수행하여 정제된 데이터를 가져올 수도 있음
+
+**플래그의 표시** <Br>
+
+``` 
+SELECT customer_id,
+    CASE WHEN gender = 'F' THEN 1 ELSE 0 END as is_female,
+    CASE WHEN likelihood in (9,10) THEN 1 ELSE 0 END as is_promoter
+ FROM ... 
+```
+> 이외에도... 
+- 특정 속성에 대해서 레이블링 할 때
+- 임계값 또는 양을 설정하여 레이블링 할 때
+
+<br>
+
+### **2.5.2 타입 변환과 캐스팅**
+**데이터타입 변경의 두 가지 방법**
+
+1) CAST(데이터 타입) <br>
+```
+e.g. CAST(1234 as varchar),<br>
+    CAST(CONCAT(year, '-', month, '-', day) as date) =>문자열로 반환 <br>
+    DATE(CONCAT(year, '-', month, '-', day)) => DATE 타입으로 바로 변환
+```
+2) 더블 콜론(::)의 사용: input :: 데이터 타입 <br>
+```
+e.g. 1234::varchar
+```
+
+**to_데이터 타입 함수**
+| 함수 | 사용 목적 |
+| -- | -- |
+| to_char | 데이터 타입을 문자열 타입으로 변환 | 
+| to_number | 데이터 타입을 숫자 타입으로 변환 | 
+| to_date | 데이터 타입을 date 타입으로 변환(날짜 부분 명시) |
+| to_timestamp | 데이터 타입을 TIMESTAMP 타입으로 변환(날짜 부분 명시) |
+
+### **2.5.3 null값 다루기**
+**null?** 해당 필드에 아무 데이터도 수집되지 않았거나 해당 필드에서 필요 없는 값을 의미
+<br> <br>
+### **null 처리법**
+1) CASE문의 사용
+```
+e.g. CASE WHEN num_orders IS NULL THEN 0 ELSE num_orders END
+    CASE WHEN address IS NULL THEN 'Unknown' ELSE address END
+```
+
+2) COALESCE : 인자를 두 개 이상 받아서 그 중 null이 아닌 첫 번째 값을 반환
+```
+e.g. COALESCE(num_orders, 0)
+```
