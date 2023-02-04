@@ -1,20 +1,21 @@
 # <b>CHAPTER 2. 데이터 준비 </b>
 ### <b>index</b>
-``` 
-1. 데이터 타입
-    1.1 데이터 베이스 데이터 타입
-    1.2 정형 데이터와 반정형 데이터
-    1.3 정량 데이터와 정성 데이터
-    1.4 퍼스트, 세컨드, 서드 파티 데이터
-    1.5 희소 데이터
+
+[1. 데이터 타입](#21-데이터-타입)<br>
+    [1.1 데이터 베이스 데이터 타입](#211-데이터-베이스-데이터-타입) <br>
+    [1.2 정형 데이터와 반정형 데이터](#212-정형-데이터와-반정형-데이터)<br>
+    [1.3 정량 데이터와 정성 데이터](#213-정량-데이터와-정성-데이터) <br>
+    [1.4 퍼스트, 세컨드, 서드 파티 데이터](#214-퍼스트-세컨드-서드-파티-데이터)<br>
+    [1.5 희소 데이터](#215-희소-데이터)<br>
     
-2. SQL 쿼리 구조
-3. 프로파일링: 데이터 분포
-4. 프로파일링: 데이터 품질
-5. 준비: 데이터 정제
+[2. SQL 쿼리 구조](#22-sql-쿼리-구조)<br>
+[3. 프로파일링: 데이터 분포](#23-프로파일링-데이터-분포)<br>
+    [2.3.1 히스토그램과 빈도](#231-히스토그램과-빈도)<br>
+[4. 프로파일링: 데이터 품질](#24-프로파일링-데이터-품질)<br>
+[5. 준비: 데이터 정제](#25-준비-데이터-정제)<br>
 6. 준비: 데이터 셰이핑
 7. 결론
-```
+
 
 데이터 랭글링: 원본 데이터를 보다 분석하기 쉬운 형태로 가공하는 과정
 
@@ -96,7 +97,7 @@ e.g. 사진, 이미지, 비디오 오디오 등 <br>
 <br>
 <b> 데이터 베이스를 죽이지 않는 방법: LIMIT와 샘플링 </b> 
 
-``` 
+``` SQL
 데이터 베이스에서 불러올 정보가 너무 많은 경우, 오류가 나거나 DB가 죽어버릴 수 있다. 이를 방지하기 위해서는 프로파일링, LIMIT 또는 샘플링을 이용해 반환할 쿼리의 수를 제한하는 방법을 사용하는 것이 좋다.
 
 
@@ -118,7 +119,7 @@ LIMIT 100 -- 100개 행으로 출력 레코드 수 제한
 ### <b> 2.3.1 히스토그램과 빈도 </b>
 - 프로파일링 하기 위한 필드를 GROUP BY 절로 지정하고, count(*)를 통해 필드 내에서 각 값의 개수를 알아냄
 
-```
+``` SQL
 SELECT fruit, count(*) as qty
 FROM fruit_inventory
 GROUP BY 1 -- 과일별로 grouping
@@ -131,7 +132,7 @@ GROUP BY 1 -- 과일별로 grouping
 - 주문 개수 별 고객 분포
     - 서브쿼리에서 count를 사용한 customer_id 에 대한 주문 수 파악
     - 이 서브쿼리에서 나온 주문 수 orders를 카테고리로 삼고 count를 사용해 주문 개술 별 고객의 수를 집계
-```
+```SQL
 SELECT orders, count(*) as num_customers
 FROM(
     SELECT customer_id, count(order_id) as orders
@@ -149,7 +150,7 @@ GROUP BY 1
 
 <b> CASE문 syntax </b>
 
-```
+```SQL
 CASE WHEN condition1 THEN return_value_1
     WHEN condition2 THEN return_value_2
     ...
@@ -163,7 +164,7 @@ CASE WHEN condition1 THEN return_value_1
 <br>
  e.g. 기업의 주문량에 따라 운송비 할인율을 다르게 적용하는 상황을 가정하여 주문량을 기준으로 기업을 나누고 주문량 구간별 기업 수를 파악
 
- ```
+ ```SQL
  SELECT 
     CASE WHEN order_amount <= 100 THEN 'up to 100'
         WHEN order_amount <= 500, THEN '100 - 500'
@@ -187,7 +188,7 @@ CASE WHEN condition1 THEN return_value_1
 | log(1000) | 3 |
 
 LOG 함수는 인자의 로그 값을 반환하며, 인자에는 상숫값이나 필드를 지정
-```
+```SQL
 SELECT log(sales) as bin,
     count(customer_id) as customers
 FROM table
@@ -204,19 +205,19 @@ GROUP BY 1
 윈도우 함수: 여러 행에 걸친 계산을 수행<br>
 함수 이름 + OVER 절로 구성 <br>
 OVER 절은 연산을 수행하고 정렬할 필드를 선택
-```
+```SQL
 function(필드명) OVER(PARTITON BY 필드명 ORDER BY 필드명)
 ```
 - 함수로는 일반 집계 함수 뿐만 아니라 rank, first_value, ntile 등도 상용 가능
 - PARTITION BY 절은 필요하지 않다면 생략 가능: 명시하지 않을 경우 전체 테이블에 대해 연산 수행
 - ORDER BY 절에 명시된 필드를 기준으로 정렬
 
-```
+```SQL
 ntile(num_bins) OVER (PARTITION BY ... ORDER BY...)
 ```
 나누고 싶은 구간의 개수를 인자로 받아 데이터를 나눔
 
-```
+```SQL
 SELECT ntile
 , min(order_amount) as lower_bound
 , max(order_amount) as upper_bound
@@ -255,7 +256,7 @@ GROUP BY 1
 기본적인 컨셉은 확인하고자 하는 컬럼을 그룹핑하여 그 개수를 카운트, 1개 초과인 중복 데이터를 탐색 <br>
 
 * Query 1 (subquery)
-```
+```SQL
 SELECT records, count(*)
 FROM (
     SELECT col_a, col_b, col_c, .. , count(*) as records
@@ -267,7 +268,7 @@ GROUP BY 1
 ```
 - Query 2 (grouping + having)
 
-```
+```SQL
 SELECT col_a, col_b, col_c, ... , count(*) as records
 FROM table
 GROUP BY 1,2,3, ... 
@@ -276,7 +277,7 @@ HAVING records > 1
 
 ### <b> 2.4.2 중복 제거 </b>
 - 거래 이력이 있는 고객 모두에게 다음 주문 시 사용 가능한 쿠폰을 보낸다고 가정해보자. 우선, customer 테이블과 transaction 테이블에 JOIN을 수행해 거래 내역이 있는 고객 리스트를 추출
-```
+```SQL
 SELECT c.customer_id, c.customer_name, c.customer_email
 FROM customer as c
 JOIN transaction as t ON c.customer_id = t.customer_id
@@ -296,7 +297,7 @@ CASE 변환, null처리, 데이터 타입 변환 등
 ### **2.5.1 CASE 문** <br>
 데이터의 표준화, 구간화 등에 사용 <br>
 e.g. NPS (순수 추천 고객 지수) 구하기
-```
+```SQL
 SELECT reposnse_id , likelihood
 , CASE WHEN likelihood <= 6 THEN 'Detractor'
     WHEN likelihood <= 8 THEN 'Passive'
@@ -305,7 +306,7 @@ SELECT reposnse_id , likelihood
 FROM nps_reponses
 ```
 또는 <b>IN</b> 연산자를 이용해 카테고리 값을 직접 지정해 줄 수 있다.
-```
+```SQL
 CASE WHEN likelihood in (0,1,2,3,4,5,6) THEN 'Detractor'
     WHEN likelihood in (7,8) THEN 'Passive'
     WHEN likelihood in (9,10) THEN 'Promoter'
@@ -315,7 +316,7 @@ CASE WHEN likelihood in (0,1,2,3,4,5,6) THEN 'Detractor'
 <br>
 동시에 여러 절에 조건을 걸 때에는 AND 또는 OR 연산자로 연결해 줄 수 있다.
 
-```
+```SQL
 CASE WHEN likelihood <= 6
         AND country = 'US'
         AND high_value = true
@@ -335,7 +336,7 @@ CASE WHEN likelihood <= 6
 
 **플래그의 표시** <Br>
 
-``` 
+``` SQL
 SELECT customer_id,
     CASE WHEN gender = 'F' THEN 1 ELSE 0 END as is_female,
     CASE WHEN likelihood in (9,10) THEN 1 ELSE 0 END as is_promoter
@@ -345,15 +346,15 @@ SELECT customer_id,
 - 특정 속성에 대해서 레이블링 할 때
 - 임계값 또는 양을 설정하여 레이블링 할 때
 
-<br>
+<br><br>
 
 ### **2.5.2 타입 변환과 캐스팅**
 **데이터타입 변경의 두 가지 방법**
 
 1) CAST(데이터 타입) <br>
-```
-e.g. CAST(1234 as varchar),<br>
-    CAST(CONCAT(year, '-', month, '-', day) as date) =>문자열로 반환 <br>
+```SQL
+e.g. CAST(1234 as varchar),
+    CAST(CONCAT(year, '-', month, '-', day) as date) =>문자열로 반환,
     DATE(CONCAT(year, '-', month, '-', day)) => DATE 타입으로 바로 변환
 ```
 2) 더블 콜론(::)의 사용: input :: 데이터 타입 <br>
@@ -369,17 +370,79 @@ e.g. 1234::varchar
 | to_date | 데이터 타입을 date 타입으로 변환(날짜 부분 명시) |
 | to_timestamp | 데이터 타입을 TIMESTAMP 타입으로 변환(날짜 부분 명시) |
 
+<br><br>
 ### **2.5.3 null값 다루기**
 **null?** 해당 필드에 아무 데이터도 수집되지 않았거나 해당 필드에서 필요 없는 값을 의미
 <br> <br>
 ### **null 처리법**
 1) CASE문의 사용
-```
+``` SQL
 e.g. CASE WHEN num_orders IS NULL THEN 0 ELSE num_orders END
     CASE WHEN address IS NULL THEN 'Unknown' ELSE address END
 ```
 
 2) COALESCE : 인자를 두 개 이상 받아서 그 중 null이 아닌 첫 번째 값을 반환
-```
+```SQL
 e.g. COALESCE(num_orders, 0)
 ```
+cf:  일부 데이터 베이스는 coalesce 함수와 비슷한 기능을 하지만 인자를 두 개만 받는 nvl 함수를 지원
+
+3) nullif : 두 숫자를 비교해서 서로 같지 않으면 첫 번재 숫자를 반환하고, 같으면 null을 반환 <br>
+특정 필드의 기본값이 무엇인지 알고 있으며, 이것을 null로 바꾸고 싶을 때 유용
+```SQL
+nullif(6,7) -> 두 숫자가 같지 않으므로 6을 반환
+nullif(6,6) -> 두 숫자가 같으므로 null을 반환
+```
+CASE문으로도 표현 가능
+``` SQL
+CASE WHEN 6 = 7 THEN 6
+    WHEN 6 = 6 THEN null
+    END
+```
+
+> **WHERE절에서 데이터를 필터링할 때 null이 문제가 될 수 있음** <br>
+case) 어떤 필드가 과일이름과 null을 동시에 저장하고 있을 때 'apple'이 아닌 값을 반화받고 싶다면 아래의 쿼리를 수행하게 될 것이다. <br>
+**WHERE my_field <> 'apple'** <br>
+그러나 일부 데이터 베이스는 위 문장을 실행하게 되면, null도 함께 반환할 수 있다. 따라서 둘 다 필터링 하기 위해서는 **or** 조건을 사용하여 'apple'과 'null' 명시적으로 조건 설정해야한다.
+**WHERE my_field <> 'apple' or my_field is null**
+
+
+<br> <br>
+### **2.5.4 결측데이터**
+<br>
+
+**결측치가 발생하는 이유**
+- 사용자가 정보를 입력하지 않음
+- 코드의 버그
+- 옮기는 과정에서의 human error
+- 데이터 수집 방법의 변경 등에 따른 결측
+- 중간에 새로운 필드를 추가했을 때 이전의 정보는 null로 채워짐
+- 테이블이 다른 테이블의 값을 참조하는 상황에서 다른 테이블이 DW에 로드 되지 않아 연결된 데이터를 찾을 수 없는 케이스 
+
+**결측치를 찾아내는 법**
+- 히스토그램, 빈도 분석 등을 통한 데이터 프로파일링
+- 두 테이블 값을 비교
+```SQL
+거래 내역이 저장된 transaction 테이블에 고객 ID가 있다면, 해당 고객의 정보는 customer 테이블에 저장되어 있을 것으로 예상한다. 두 테이블에 LEFT JOIN과 WHERE절을 사용해 customer 테이블에 정보가 저장되지 않은 고객의 ID를 찾는다.
+
+SELECT distinct t.customer_id
+FROM transactions t
+LEFT JOIN customers c on t.customer_id = c.customer_id
+WHERE c.customer_id is null
+;
+```
+
+**결측치는 모두 오류?** <br>
+결측 데이터는 그 자체로 의미를 지닐 수 있으므로, 무조건 결측 데이터가 없도록 만들거나 다른 값으로 채워서는 안 된다. 결측 데이터를 통해 근복적인 시스템 설계 문제 또는 데이터 수집 과정 내의 문제를 찾아내기도 한다.
+<br>
+<br>
+**결측치 대체** <br>
+평균, 중앙값 또는 바로 이전에 저장된 값 등으로 대체할 수 있다.<br>
+결측값을 다른 값으로 대체하면 앞으로 수행할 데이터 분석의 결과도 계속 달라질 수 있으므로, 결측값이 무엇이며, 어떤 값으로 대체했는지를 문서화 해야함.
+<br><br>
+1) 상수값으로 채우기 <br>
+'xyz' 상품의 값이 20달러라는 것을 안다면 20을 채워넣으면 된다. (CASE문 사용)
+``` SQL
+CASE WHEN price is null and item_name = 'xyz' THEN 20 ELSE price END
+```
+2) 수리 함수나 CASE문을 사용해 생성한 값으로 결측값 채우기
