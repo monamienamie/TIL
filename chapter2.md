@@ -626,4 +626,23 @@ SELECT ...
 FROM ...
     PIVOT(aggregation(value_column) for label_column in (label_1, label_2, ...))
 ```
-- postgreSQL에서 피봇팅을 할 수 잇는 
+- postgreSQL에서 피봇팅을 할 수 있는 CROSSTAB, 언피봇을 할 수 있는 UNNEST 함수 제공(Presto도 사용 가능)
+``` SQL
+UNNEST(array[element_1, element_2, ...])
+```
+``` SQL
+SELECT country,
+UNNEST(array['1980', '1990', '2000', '2010']) as year,
+UNNEST(array[year_1980, year_1990, year_2000, year_2010]) as pop
+FROM country_populations
+;
+```
+country | year | pop
+-- | -- | --
+Canada | 1980 | 24593
+Canada | 1990 | 27791
+Canada | 2000 | 31100
+...
+
+## **2.7 결론**
+분석할 데이터의 타입을 이해하는 일은 매우 중요하므로 충분한 시간을 들여야 하며, 데이터셋을 명확히 이해하고 데이터 품질을 검토하는 데이터 프로파일링 또한 중욘
